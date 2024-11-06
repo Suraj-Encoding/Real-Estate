@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import React, { useState } from 'react';
+import emailjs from '@emailjs/browser';  // Import EmailJS
 import usernameIcon from '../assets/icons/Icon.png';
 import callIcon from '../assets/icons/callIcon.png';
 import emailIcon from '../assets/icons/email.png';
@@ -13,10 +14,10 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const schema = yup.object().shape({
-  firstName: yup.string().required('First name is required'),
-  lastName: yup.string().required('Last name is required'),
+  fname: yup.string().required('First name is required'),
+  lname: yup.string().required('Last name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
-  phoneNumber: yup
+  phone: yup
     .string()
     .matches(/^[0-9]*$/, 'Invalid phone number, please enter numbers only')
     .required('Phone number is required'),
@@ -31,11 +32,43 @@ const Form = () => {
     reset,
   } = useForm({ resolver: yupResolver(schema) });
   const [submitting, setSubmitting] = useState(false);
+
+  // EmailJS function to send email
+  const sendEmail = (data) => {
+    const { fname, lname, email, phone, message } = data;
+
+    const to_email = process.env.NEXT_PUBLIC_TO_EMAIL;
+
+    // EmailJS service details
+    const serviceID = process.env.NEXT_PUBLIC_SERVICE_ID;
+    const templateID = process.env.NEXT_PUBLIC_TEMPLATE_ID;
+    const userID = process.env.NEXT_PUBLIC_USER_ID;
+
+    const templateParams = {
+      fname,
+      lname,
+      email,
+      to_email,
+      phone,
+      message,
+    };
+
+    emailjs
+      .send(serviceID, templateID, templateParams, userID)
+      .then((response) => {
+        console.log('SUCCESS!', response.status, response.text);
+        toast.success('Email sent successfully!');
+      })
+      .catch((error) => {
+        console.error('FAILED...', error);
+        toast.error('Failed to send email. Please try again later.');
+      });
+  };
+
   const onSubmit = async (data) => {
     try {
       setSubmitting(true);
-      console.log(data);
-      toast.success('Form submitted successfully!');
+      sendEmail(data); // Call the sendEmail function here
       reset();
     } catch (error) {
       console.error(error);
@@ -81,8 +114,8 @@ const Form = () => {
               <div className="flex flex-col">
                 <label className="relative">
                   <input
-                    {...register('firstName')}
-                    name="firstName"
+                    {...register('fname')}
+                    name="fname"
                     placeholder="First Name"
                     className="flex justify-between items-center rounded-xl py-[15px] px-[30px] shadow-md sm:w-[320px] h-[60px] capitalize mb-5 sm:mb-0 dark:bg-gray-600"
                   />
@@ -92,7 +125,7 @@ const Form = () => {
                     className="w-5 h-5 absolute right-5 top-1/2 transform -translate-y-1/2"
                   />
                 </label>
-                {errors.firstName && (
+                {errors.fname && (
                   <span className=" text-red-500 text-xs text-center mt-1">
                     required
                   </span>
@@ -102,8 +135,8 @@ const Form = () => {
               <div className="flex flex-col">
                 <label className="relative">
                   <input
-                    {...register('lastName')}
-                    name="lastName"
+                    {...register('lname')}
+                    name="lname"
                     placeholder="Last Name"
                     className="flex justify-between items-center  rounded-xl py-[15px] px-[30px] shadow-md sm:w-[320px] h-[60px] capitalize mb-5 sm:mb-0 dark:bg-gray-600"
                   />
@@ -113,7 +146,7 @@ const Form = () => {
                     className="w-5 h-5 absolute right-5 top-1/2 transform -translate-y-1/2"
                   />
                 </label>
-                {errors.lastName && (
+                {errors.lname && (
                   <span className="text-red-500 text-xs mt-1 text-center">
                     required
                   </span>
@@ -147,8 +180,8 @@ const Form = () => {
               <div className="flex flex-col">
                 <label className="relative">
                   <input
-                    {...register('phoneNumber')}
-                    name="phoneNumber"
+                    {...register('phone')}
+                    name="phone"
                     placeholder="Phone Number"
                     className="flex justify-between items-center  rounded-xl py-[15px] px-[30px] shadow-md sm:w-[320px] h-[60px] mb-5  sm:mb-0 dark:bg-gray-600"
                   />
@@ -158,7 +191,7 @@ const Form = () => {
                     className="w-5 h-5 absolute right-5 top-1/2 transform -translate-y-1/2"
                   />
                 </label>
-                {errors.phoneNumber && (
+                {errors.phone && (
                   <span className="text-red-500 text-xs text-center">
                     required
                   </span>
@@ -179,7 +212,7 @@ const Form = () => {
                   />
                   <Image
                     src={messageIcon}
-                    alt="message"
+                    alt="message icon"
                     className="w-5 h-5 absolute right-5 top-1/2 transform -translate-y-1/2"
                   />
                 </label>
@@ -190,27 +223,19 @@ const Form = () => {
                 )}
               </div>
             </div>
+
+            {/* Submit button */}
             <button
               type="submit"
-              className="flex justify-center items-center py-[15px] px-[35px] bg-[#3361FF] hover:bg-[#11266e] rounded-[30px] capitalize text-white mt-7 sm:mt-0"
+              className="mt-14 bg-orange-200 hover:bg-orange-600 px-4 py-1 rounded-2xl text-orange-500 hover:text-white h-10 w-30 font-black text-xs uppercase cursor-pointer"
+              disabled={submitting}
             >
-              send request
+              {submitting ? 'Submitting...' : 'Send Message'}
             </button>
-            <ToastContainer
-              position="bottom-center"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="dark"
-            />
           </div>
         </form>
       </div>
+      <ToastContainer />
     </div>
   );
 };
